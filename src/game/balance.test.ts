@@ -8,6 +8,8 @@ import type { Alien, Game, InputState } from './types';
 import { step } from './update';
 
 const MAX_TICKS = 60 * 60 * 30;
+// Full-game simulations are slow on CI runners; give them room beyond Vitest's 5s default.
+const SIM_TIMEOUT = 60_000;
 const BUY_ORDER: ShopId[] = ['turret', 'soldier', 'turretLevel', 'base', 'repair', 'armor'];
 
 /** A sloppy human-like player: re-picks a target every half second and aims with some error. */
@@ -72,13 +74,13 @@ describe('balance', () => {
     for (let t = 0; t < MAX_TICKS && g.phase === 'wave'; t++) step(g, idleInput(), DT);
     expect(g.phase).toBe('gameover');
     expect(g.wave).toBe(1);
-  });
+  }, SIM_TIMEOUT);
 
   const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 
   it('cannot be won by shooting alone, without upgrading the base', () => {
     for (const seed of SEEDS) expect(play(seed, 0.6, false).phase).toBe('gameover');
-  });
+  }, SIM_TIMEOUT);
 
   it('is usually winnable by a sloppy player who spends their coins', () => {
     const games = SEEDS.map((seed) => play(seed, 0.3, true));
@@ -88,5 +90,5 @@ describe('balance', () => {
     for (const g of wins) expect(g.player.unlocked).toBe(WEAPON_ORDER.length - 1);
     // Losses come from the mid-to-late, boss-heavy waves, never the opening ones.
     for (const g of games) expect(g.wave).toBeGreaterThanOrEqual(4);
-  });
+  }, SIM_TIMEOUT);
 });
